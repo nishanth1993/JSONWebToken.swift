@@ -7,12 +7,18 @@ extension HMACAlgorithm: SignAlgorithm, VerifyAlgorithm {
     let context = UnsafeMutablePointer<CCHmacContext>.allocate(capacity: 1)
     defer { context.deallocate() }
 
-    key.withUnsafeBytes() { (buffer: UnsafePointer<UInt8>) in
-      CCHmacInit(context, hash.commonCryptoAlgorithm, buffer, size_t(key.count))
+    key.withUnsafeBytes { (ptr: UnsafeRawBufferPointer) in
+        if let ptrAddress = ptr.baseAddress, ptr.count > 0 {
+            let buffer = ptrAddress.assumingMemoryBound(to: UInt8.self)
+            CCHmacInit(context, hash.commonCryptoAlgorithm, buffer, size_t(key.count))
+        }
     }
 
-    message.withUnsafeBytes { (buffer: UnsafePointer<UInt8>) in
-      CCHmacUpdate(context, buffer, size_t(message.count))
+    message.withUnsafeBytes { (ptr: UnsafeRawBufferPointer) in
+        if let ptrAddress = ptr.baseAddress, ptr.count > 0 {
+            let buffer = ptrAddress.assumingMemoryBound(to: UInt8.self)
+            CCHmacUpdate(context, buffer, size_t(message.count))
+        }
     }
 
     var hmac = Array<UInt8>(repeating: 0, count: Int(hash.commonCryptoDigestLength))
